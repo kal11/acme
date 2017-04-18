@@ -1,39 +1,39 @@
-director acme client {
-        {
-                .backend = acmedynamic;
-                .weight = 9;
-        }
-        {
-                .backend = acmestatic;
-                .weight = 1;
-        }
-}
-sub vcl_recv {
-  //...
-<% @acmestatic.each do |acmestatic| -%>
-  if (req.url ~ "(?i)\.(jpeg|jpg|png|gif|ico|webp|js|css|txt|pdf|gz|zip|lzma|bz2|tgz|tbz|html|htm)$") {
-      unset req.http.Cookie;
-      return (lookup);
-      set req.backend = "<% acmestatic['ipaddress'] -%>";
-      set req.backend = "<% acmestatic['fqdn'] -%>";
-      set req.backend = "<%= acmestatic['ipaddress'] %>"; 
-      set req.backend = "<%= acmestatic['fqdn'] %>";
-  } else {
-      return (pass);
-      set req.backend = acmestatic;
+backend acmestatic{
+.host = "<%= acmestatic['ipaddress'] %>";
+.port = 8080;
+.probe = {
+                .url = "/";
+                .interval = 5s;
+                .timeout = 1 s;
+                .window = 5;
+                .threshold = 3;
   }
-  //...
 }
 <% end -%>
-// ..
+sub vcl_init {
+        new rrdirector = directors.round_robin();
+        rrdirector.add_backend(acmestatic);
+        rrdirector.add_backend(amedynamic);
+}
+
+sub vcl_recv {
+    if (req.url ~ "(?i)\.(jpeg|jpg|png|gif|ico|webp|js|css|txt|pdf|gz|zip|lzma|bz2|tgz|tbz|html|htm)$") {
+       unset req.http.Cookie;
+       return (lookup);
+        set req.backend_hint = acmestatic();
+    } else {
+        set req.backend_hint = acmedynamic();
+    }
+    set req.backend_hint = radirector.backend();
+}
 
 sub vcl_fetch {
   //...
   if (req.url ~ "(?i)\.(jpeg|jpg|png|gif|ico|webp|js|css|txt|pdf|gz|zip|lzma|bz2|tgz|tbz|html|htm)$") {
       unset beresp.http.set-cookie;
-      set req.backend = ['acmedynamic'];
+      set req.backend_hint = acmestatic();
   } else {
-       set req.backend = acmestatic;
+       set req.backend_hint = acmedynamic();
   {
   //...
 }
