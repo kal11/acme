@@ -16,5 +16,5 @@ TODO: acmedynamic not finalized yet it's actually a one line of extra work and i
 
 For now this cookbook only works on ubuntu and tested on ubuntu-16.04.
 
-Whenever I get more time I will work on fixing the issue and a new branch for the acmedynamic and AWS support for autoscaling using ELB ASGs.
+For AWS scalability there should be an auto scaling group defined and then we can use an ELB in front of varnish, for backend building we can use knife EC2, most important part for the backend to join the farm is the role needs to be acmestatic.
 
